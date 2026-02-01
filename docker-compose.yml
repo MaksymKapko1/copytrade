@@ -1,0 +1,7 @@
+services:
+  whale-bot:
+    build: .
+    container_name: whale_bot
+    restart: always
+    env_file:
+      - .env

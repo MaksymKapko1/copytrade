@@ -1,0 +1,4 @@
+websockets>=14.0
+requests
+aiohttp
+python-dotenv
