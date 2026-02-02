@@ -4,8 +4,8 @@ import json
 import logging
 import sys
 
-from config import CHANNELS_TO_LISTEN, ID_TO_COIN, TARGET_ID, WS_URL
-from tgbot import send_whale_alert
+from config import CHANNELS_TO_LISTEN, ID_TO_COIN, TARGET_ID, WS_URL, TARGET_BUYER_ID
+from tgbot import send_whale_alert, send_buyback_alert
 
 logging.basicConfig(
     level=logging.INFO,
@@ -53,6 +53,9 @@ async def socket_worker(worker_id, channels_subset):
 
                                 logger.info(f"🔔 [Worker {worker_id}] СДЕЛКА!")
                                 await send_whale_alert(trade, coin_name)
+                            elif bidder == TARGET_BUYER_ID:
+                                logger.info(f"BUYBACKS FOUND")
+                                await send_buyback_alert(trade)
 
         except (websockets.exceptions.ConnectionClosed, asyncio.TimeoutError) as e:
             logger.error(f"❌ [Worker {worker_id}] Разрыв: {e}")
