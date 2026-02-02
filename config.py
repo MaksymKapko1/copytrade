@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-TARGET_BUYER_ID = '32734'
+TARGET_BUYER_ID = 32734
 try:
     BOT_TOKEN = os.environ["TG_BOT_TOKEN"]
     CHANNEL_ID = os.environ["TG_CHANNEL_ID"]
