@@ -25,12 +25,14 @@ class BuybackStats:
         self.total_usdc = 0.0  # Общий объем в $
         self.count = 0  # Кол-во сделок
         self.start_time = time.time()
-        self.coins = set()  # Список монет (если их несколько)
+        self.coins = set()
+        self.tx_hash = None# Список монет (если их несколько)
 
     def add_trade(self, trade, coin_name):
         try:
             size = float(trade.get('size', 0))
             price = float(trade.get('price', 0))
+            self.tx_hash = trade.get('tx_hash', '')
 
             usd_amount = float(trade.get('usd_amount', 0))
             self.total_tokens += size
@@ -115,6 +117,7 @@ async def report_loop(interval_minutes=1):
                 f"💰 Выкуплено на: **${stats.total_usdc:,.2f}**\n"
                 f"📦 Объем токенов: {stats.total_tokens:,.4f}\n"
                 f"📉 Средняя цена: ${avg_price:.4f}"
+                f"Hash: {stats.tx_hash}"
             )
 
             from tgbot import send_buyback_report
