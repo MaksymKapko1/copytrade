@@ -14,18 +14,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger("WhaleBot")
 
-async def keepalive(websocket, worker_id, channel_name):
-    while True:
-        try:
-            await asyncio.sleep(25)
-
-            msg = {"type": "subscribe", "channel": channel_name}
-            await websocket.send(json.dumps(msg))
-
-        except Exception:
-            break
-
-
 async def socket_worker(worker_id, channels_subset):
     logger.info(f"🤖 [Worker {worker_id}] Запуск. Каналов: {len(channels_subset)}")
 
@@ -33,9 +21,6 @@ async def socket_worker(worker_id, channels_subset):
         try:
             async with websockets.connect(WS_URL, ping_interval=None) as websocket:
                 logger.info(f"✅ [Worker {worker_id}] Connected")
-
-                if channels_subset:
-                    asyncio.create_task(keepalive(websocket, worker_id, channels_subset[0]))
 
                 for i, channel in enumerate(channels_subset):
                     msg = {"type": "subscribe", "channel": channel}
@@ -47,6 +32,14 @@ async def socket_worker(worker_id, channels_subset):
                 while True:
                     response = await websocket.recv()
                     data = json.loads(response)
+
+                    msg_type = data.get('type')
+
+                    if msg_type == 'ping':
+                        logger.info(f"❤️ [Worker {worker_id}] PING получен -> PONG отправлен")
+                        pong_msg = {"type": "pong"}
+                        await websocket.send(json.dumps(pong_msg))
+                        continue
 
                     trades = data.get('trades')
                     if trades:
