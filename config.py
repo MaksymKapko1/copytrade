@@ -2,6 +2,7 @@ import os
 import sys
 import requests
 from dotenv import load_dotenv
+
 load_dotenv()
 
 try:
@@ -33,7 +34,5 @@ def load_all_markets():
         return id_to_coin, channels_to_listen
     except Exception as e:
         print(f"❌ Ошибка при загрузке маркетов: {e}")
-        # Если API упал, лучше остановить скрипт, чем запускать пустым,
-        # либо здесь можно вернуть захардкоженный запасной список.
         sys.exit(1)
 ID_TO_COIN, CHANNELS_TO_LISTEN = load_all_markets()

@@ -4,9 +4,11 @@ import sys
 import json
 import websockets
 import logging
-from datetime import datetime
 from dotenv import load_dotenv
+from tgbot import send_buyback_alert
 
+TARGET_BUYER_ID = '32734'
+COIN_NAME = 'LIT'
 load_dotenv()
 
 logging.basicConfig(
@@ -16,8 +18,6 @@ logging.basicConfig(
     handlers=[logging.StreamHandler(sys.stdout)]
 )
 logger = logging.getLogger("Buybacks")
-
-TARGET_BUYER_ID = '32734'
 
 try:
     WS_URL = os.environ["WEBSOCKET_URL"]
@@ -56,23 +56,10 @@ async def track_buyback_wallet():
                     if trades and isinstance(trades, list):
                         for trade in trades:
                             bid_account_id = str(trade.get('bid_account_id'))
-                            ask_account_id = str(trade.get('ask_account_id'))
 
                             if bid_account_id == TARGET_BUYER_ID:
-                                size = float(trade.get('size'))
-                                price = float(trade.get('price'))
-                                usd_amount = float(size * price)
-                                raw_ts = trade.get('timestamp')
-                                human_time = "Unknown"
-                                if raw_ts:
-                                    if raw_ts > 100000000000000:
-                                        raw_ts /= 1000000
-                                    elif raw_ts > 10000000000:
-                                        raw_ts /= 1000
-                                    human_time = datetime.fromtimestamp(raw_ts).strftime('%H:%M:%S %d.%m.%Y')
-                                print(f"\n🔥🔥🔥 BUYBACK ДЕТЕКТЕД! 🔥🔥🔥")
-                                print(f"Price: {price} | Size: {size} | USD Amount: {usd_amount} | Time: {human_time}")
-                                print("-" * 30)
+                                logger.info(f"СДЕЛКА НАЙДЕНА")
+                                await send_buyback_alert(trade)
 
         except (websockets.exceptions.ConnectionClosedError, OSError) as e:
             logger.warning(f"⚠️ Разрыв соединения: {e}")

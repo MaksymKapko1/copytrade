@@ -25,6 +25,7 @@ async def send_whale_alert(trade, coin_name):
     asker = trade.get('ask_account_id')
     bidder = trade.get('bid_account_id')
 
+
     if bidder == TARGET_ID:
         header = "🟢 <b>WHALE BOUGHT (LONG)</b>"
     else:
@@ -38,7 +39,6 @@ async def send_whale_alert(trade, coin_name):
     raw_ts = trade.get('timestamp')
     human_time = "Unknown"
     if raw_ts:
-        # Фикс микросекунд/миллисекунд
         if raw_ts > 100000000000000:
             raw_ts /= 1000000
         elif raw_ts > 10000000000:
@@ -56,3 +56,37 @@ async def send_whale_alert(trade, coin_name):
 
         await send_telegram_request(message)
         logger.info(f"📤 Уведомление отправлено: {coin_name} | ${amount_usd}")
+
+async def send_buyback_alert(trade, coin_name="LIT"):
+    try:
+        price = float(trade.get('price', 0))
+        size = float(trade.get('size', 0))
+        amount_usd = size * price
+    except ValueError:
+        price, size, amount_usd = 0, 0, 0
+
+    raw_ts = trade.get('timestamp')
+    human_time = "Unknown"
+    if raw_ts:
+        try:
+            ts = float(raw_ts)
+            if ts > 100000000000000:
+                ts /= 1000000
+            elif ts > 10000000000:
+                ts /= 1000
+            human_time = datetime.fromtimestamp(ts).strftime('%H:%M:%S %d.%m.%Y')
+        except Exception:
+            pass
+
+    message = (
+        f"🔥🔥🔥 <b>BUYBACK DETECTED!</b> 🔥🔥🔥\n\n"
+        f"🪙 <b>Asset:</b> {coin_name}\n"
+        f"💰 <b>Value:</b> ${amount_usd:,.2f}\n"  
+        f"📉 <b>Price:</b> {price}\n"
+        f"📦 <b>Size:</b> {size}\n"
+        f"🕒 <b>Time:</b> {human_time}\n"
+        f"🆔 <b>Wallet:</b> Buyback Treasury\n"
+    )
+
+    await send_telegram_request(message)
+    logger.info(f"📤 Байбэк отправлен в TG: ${amount_usd:,.2f}")
