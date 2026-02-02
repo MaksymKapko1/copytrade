@@ -4,6 +4,34 @@ from datetime import datetime
 from config import BOT_TOKEN, CHANNEL_ID, TARGET_ID
 
 logger = logging.getLogger("Notifier")
+URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+
+async def send_async_message(text):
+    """
+    Отправляет сообщение в Telegram асинхронно через aiohttp.
+    """
+    payload = {
+        "chat_id": CHANNEL_ID,
+        "text": text,
+        "parse_mode": "Markdown",
+        "disable_web_page_preview": True
+    }
+
+    try:
+        # Создаем сессию (соединение)
+        async with aiohttp.ClientSession() as session:
+            # Отправляем POST запрос и ждем (await), не блокируя остальной код
+            async with session.post(URL, json=payload) as response:
+                if response.status != 200:
+                    # Если ошибка, читаем текст ошибки
+                    err_text = await response.text()
+                    logger.error(f"⚠️ Ошибка Telegram API {response.status}: {err_text}")
+    except Exception as e:
+        logger.error(f"❌ Не удалось отправить сообщение в TG: {e}")
+
+async def send_buyback_report(message_text):
+    # Просто вызываем нашу универсальную функцию
+    await send_async_message(message_text)
 
 async def send_telegram_request(text):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
