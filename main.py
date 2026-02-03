@@ -5,8 +5,6 @@ import logging
 import sys
 import time
 
-from lighter.models import tx_hash
-
 from config import CHANNELS_TO_LISTEN, ID_TO_COIN, TARGET_ID, WS_URL, TARGET_BUYER_ID
 from tgbot import send_whale_alert, send_buyback_alert
 from datetime import datetime
@@ -119,7 +117,7 @@ async def report_loop(interval_minutes=30):
                 f"💰 Выкуплено на: **${stats.total_usdc:,.2f}**\n"
                 f"📦 Объем токенов: {stats.total_tokens:,.4f}\n"
                 f"📉 Средняя цена: ${avg_price:.4f}"
-                f"Hash:https://app.lighter.xyz/explorer/logs/{tx_hash}"
+                f"Hash:https://app.lighter.xyz/explorer/logs/{stats.tx_hash}"
             )
 
             from tgbot import send_buyback_report
