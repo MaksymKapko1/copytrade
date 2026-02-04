@@ -135,7 +135,7 @@ async def socket_worker(worker_id, channels_subset):
             await asyncio.sleep(5)
 
 
-async def report_loop(interval_minutes=30):
+async def report_loop(interval_minutes=10):
     logger.info(f"⏳ Запущен репортер байбеков (интервал {interval_minutes} мин)")
 
     while True:
@@ -184,7 +184,7 @@ async def main():
         task = asyncio.create_task(socket_worker(i + 1, chunk))
         tasks.append(task)
 
-    reporter_task = asyncio.create_task(report_loop(interval_minutes=30))
+    reporter_task = asyncio.create_task(report_loop(interval_minutes=10))
     tasks.append(reporter_task)
 
     await asyncio.gather(*tasks)
