@@ -150,17 +150,17 @@ async def report_loop(interval_minutes=10):
             message = (
                 f"🛒 **ОТЧЕТ ПО БАЙБЕКАМ (TWAP)**\n"
                 f"⏱ За последние {duration} мин\n"
-                f"{50*'-'}"
+                f"{20*'-'}\n"
                 f"💎 Токен: {stats.coin_name}\n"
                 f"📊 Всего сделок: {stats.count}\n"
                 f"💰 Выкуплено на: **${stats.total_usdc:,.2f}**\n"
                 f"📦 Объем токенов: {stats.total_tokens:,.4f}\n"
                 f"📉 Средняя цена входа: ${avg_price:.4f}\n"
-                f"{50*'-'}"
+                f"{20*'-'}\n"
                 f"🏦 **Текущий баланс Buyer:**\n"
                 f"🔥 LIT: `{current_lit:,.2f}`\n"
                 f"💵 USDC: `{current_usdc:,.2f}`\n\n"
-                f"{50*'-'}"
+                f"{20*'-'}\n"
                 f"🔗 [Last TX Explorer](https://app.lighter.xyz/explorer/logs/{stats.tx_hash})"
             )
 
