@@ -18,6 +18,7 @@ logger = logging.getLogger("WhaleBot")
 
 class BuybackStats:
     def __init__(self):
+        self.processed_ids = set()
         self.reset()
 
     def reset(self):
@@ -25,20 +26,30 @@ class BuybackStats:
         self.total_usdc = 0.0  # Общий объем в $
         self.count = 0  # Кол-во сделок
         self.start_time = time.time()
-        self.coins = set()
-        self.tx_hash = None# Список монет (если их несколько)
+        self.coin_name = "Unknown"
+        self.tx_hash = None
+        self.processed_ids.clear()# Список монет (если их несколько)
 
     def add_trade(self, trade, coin_name):
         try:
+            unique_id = trade.get('tx_hash')
+            if unique_id in self.processed_ids:
+                return
+            if unique_id:
+                self.processed_ids.add(unique_id)
+
             size = float(trade.get('size', 0))
             price = float(trade.get('price', 0))
-            self.tx_hash = trade.get('tx_hash', '')
+            usd_val = float(trade.get('usd_amount', 0))
+            if usd_val == 0:
+                usd_val = size * price
 
-            usd_amount = float(trade.get('usd_amount', 0))
             self.total_tokens += size
-            self.total_usdc += size * price
+            self.total_usdc += usd_val
             self.count += 1
-            self.coins.add(coin_name)
+
+            self.coin_name = coin_name
+            self.tx_hash = trade.get('tx_hash', '')
         except Exception as e:
             logger.error(f"Ошибка при подсчете статистики: {e}")
 
@@ -112,12 +123,12 @@ async def report_loop(interval_minutes=30):
             message = (
                 f"🛒 **ОТЧЕТ ПО БАЙБЕКАМ (TWAP)**\n"
                 f"⏱ За последние {duration} мин\n"
-                f"💎 Токены: {coins_str}\n"
+                f"💎 Токен: {stats.coin_name}\n"
                 f"📊 Всего сделок: {stats.count}\n"
                 f"💰 Выкуплено на: **${stats.total_usdc:,.2f}**\n"
                 f"📦 Объем токенов: {stats.total_tokens:,.4f}\n"
-                f"📉 Средняя цена: ${avg_price:.4f}\n"
-                f"Hash:https://app.lighter.xyz/explorer/logs/{stats.tx_hash}"
+                f"📉 Средняя цена входа: ${avg_price:.4f}\n"
+                f"🔗 [Last TX Explorer](https://app.lighter.xyz/explorer/logs/{stats.tx_hash})"
             )
 
             from tgbot import send_buyback_report
