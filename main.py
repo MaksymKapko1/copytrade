@@ -4,10 +4,10 @@ import json
 import logging
 import sys
 import time
-import aiohttp
 
-from config import CHANNELS_TO_LISTEN, ID_TO_COIN, TARGET_ID, WS_URL, TARGET_BUYER_ID
-from tgbot import send_whale_alert
+from config import TARGET_ID, WS_URL, TARGET_BUYER_ID, API_URL
+from tgbot import send_whale_alert, send_buyback_report
+from services.MarketAPI import MarketAPI
 
 logging.basicConfig(
     level=logging.INFO,
@@ -15,6 +15,9 @@ logging.basicConfig(
     datefmt="%H:%M:%S"
 )
 logger = logging.getLogger("WhaleBot")
+
+ID_TO_COIN = {}
+CHANNELS_TO_LISTEN = []
 
 class BuybackStats:
     def __init__(self):
@@ -54,32 +57,6 @@ class BuybackStats:
             logger.error(f"Ошибка при подсчете статистики: {e}")
 
 stats = BuybackStats()
-
-async def get_wallet_balance(account_id):
-    url = f"https://explorer.elliot.ai/api/accounts/{account_id}/assets"
-    lit = 0
-    usdc = 0
-
-    try:
-        async with aiohttp.ClientSession() as session:
-            async with session.get(url) as response:
-                if response.status == 200:
-                    data = await response.json()
-                    assets = data.get("assets", {})
-
-                    for asset_id, info in assets.items():
-                        symbol = info.get("symbol", "").upper()
-                        balance_str = info.get("balance", "0")
-
-                        if symbol == "LIT":
-                            lit_bal = float(balance_str)
-                        elif symbol == "USDC":
-                            usdc_bal = float(balance_str)
-                        else:
-                            logger.error(f"API Error: Status {response.status}")
-    except Exception as e:
-        logger.error(f"Не удалось получить баланс: {e}")
-    return lit_bal, usdc_bal
 
 async def socket_worker(worker_id, channels_subset):
     logger.info(f"🤖 [Worker {worker_id}] Запуск. Каналов: {len(channels_subset)}")
@@ -146,7 +123,7 @@ async def report_loop(interval_minutes=10):
             avg_price = stats.total_usdc / stats.total_tokens if stats.total_tokens > 0 else 0
             coins_str = ", ".join(stats.coins)
 
-            current_lit, current_usdc = await get_wallet_balance(TARGET_BUYER_ID)
+            current_lit, current_usdc = await MarketAPI.get_wallet_balance(TARGET_BUYER_ID)
             message = (
                 f"🛒 **ОТЧЕТ ПО БАЙБЕКАМ (TWAP)**\n"
                 f"⏱ За последние {duration} мин\n"
@@ -174,6 +151,14 @@ async def report_loop(interval_minutes=10):
             logger.info("📉 Байбеков за период не было, отчет пропущен.")
 
 async def main():
+    global ID_TO_COIN, CHANNELS_TO_LISTEN
+    logger.info("⏳ Fetching markets from API...")
+    ID_TO_COIN, CHANNELS_TO_LISTEN = await MarketAPI.fetch_markets(API_URL)
+
+    if not CHANNELS_TO_LISTEN:
+        logger.error("❌ Failed to load markets or empty list. Exiting.")
+        return
+
     CHUNK_SIZE = 80
     chunks = [CHANNELS_TO_LISTEN[i:i + CHUNK_SIZE] for i in range(0, len(CHANNELS_TO_LISTEN), CHUNK_SIZE)]
 
