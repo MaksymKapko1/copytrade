@@ -36,7 +36,7 @@ class BuybackStats:
 
             usd_amount = float(trade.get('usd_amount', 0))
             self.total_tokens += size
-            self.total_usdc = size * price
+            self.total_usdc = self.total_tokens * price
             self.count += 1
             self.coins.add(coin_name)
         except Exception as e:
