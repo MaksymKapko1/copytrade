@@ -116,7 +116,7 @@ async def report_loop(interval_minutes=30):
                 f"📊 Всего сделок: {stats.count}\n"
                 f"💰 Выкуплено на: **${stats.total_usdc:,.2f}**\n"
                 f"📦 Объем токенов: {stats.total_tokens:,.4f}\n"
-                f"📉 Средняя цена: ${avg_price:.4f}"
+                f"📉 Средняя цена: ${avg_price:.4f}\n"
                 f"Hash:https://app.lighter.xyz/explorer/logs/{stats.tx_hash}"
             )
 
