@@ -4,10 +4,10 @@ import json
 import logging
 import sys
 import time
+import aiohttp
 
 from config import CHANNELS_TO_LISTEN, ID_TO_COIN, TARGET_ID, WS_URL, TARGET_BUYER_ID
-from tgbot import send_whale_alert, send_buyback_alert
-from datetime import datetime
+from tgbot import send_whale_alert
 
 logging.basicConfig(
     level=logging.INFO,
@@ -54,6 +54,32 @@ class BuybackStats:
             logger.error(f"Ошибка при подсчете статистики: {e}")
 
 stats = BuybackStats()
+
+async def get_wallet_balance(account_id):
+    url = f"https://explorer.elliot.ai/api/accounts/{account_id}/assets"
+    lit = 0
+    usdc = 0
+
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    assets = data.get("assets", {})
+
+                    for asset_id, info in assets.items():
+                        symbol = info.get("symbol", "").upper()
+                        balance_str = info.get("balance", "0")
+
+                        if symbol == "LIT":
+                            lit_bal = float(balance_str)
+                        elif symbol == "USDC":
+                            usdc_bal = float(balance_str)
+                        else:
+                            logger.error(f"API Error: Status {response.status}")
+    except Exception as e:
+        logger.error(f"Не удалось получить баланс: {e}")
+    return lit_bal, usdc_bal
 
 async def socket_worker(worker_id, channels_subset):
     logger.info(f"🤖 [Worker {worker_id}] Запуск. Каналов: {len(channels_subset)}")
@@ -120,14 +146,21 @@ async def report_loop(interval_minutes=30):
             avg_price = stats.total_usdc / stats.total_tokens if stats.total_tokens > 0 else 0
             coins_str = ", ".join(stats.coins)
 
+            current_lit, current_usdc = await get_wallet_balance(TARGET_BUYER_ID)
             message = (
                 f"🛒 **ОТЧЕТ ПО БАЙБЕКАМ (TWAP)**\n"
                 f"⏱ За последние {duration} мин\n"
+                f"{50*'-'}"
                 f"💎 Токен: {stats.coin_name}\n"
                 f"📊 Всего сделок: {stats.count}\n"
                 f"💰 Выкуплено на: **${stats.total_usdc:,.2f}**\n"
                 f"📦 Объем токенов: {stats.total_tokens:,.4f}\n"
                 f"📉 Средняя цена входа: ${avg_price:.4f}\n"
+                f"{50*'-'}"
+                f"🏦 **Текущий баланс Buyer:**\n"
+                f"🔥 LIT: `{current_lit:,.2f}`\n"
+                f"💵 USDC: `{current_usdc:,.2f}`\n\n"
+                f"{50*'-'}"
                 f"🔗 [Last TX Explorer](https://app.lighter.xyz/explorer/logs/{stats.tx_hash})"
             )
 
